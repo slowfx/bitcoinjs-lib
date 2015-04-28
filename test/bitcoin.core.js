@@ -162,7 +162,24 @@ describe('Bitcoin-core', function () {
           var input = inputs[i]
           var prevOutHash = input[0]
           var prevOutIndex = input[1]
-          //          var prevOutScriptPubKey = input[2] // TODO: we don't have a ASM parser
+          var prevOutScriptPubKey = input[2]
+          .replace(/(^| )1( |$)/g, 'OP_1 ').replace(/(^| )2( |$)/g, 'OP_2 ').replace(/(^| )3( |$)/g, 'OP_3 ')
+          .replace(/(^| )4( |$)/g, 'OP_4 ').replace(/(^| )5( |$)/g, 'OP_5 ').replace(/(^| )6( |$)/g, 'OP_6 ')
+          .replace(/(^| )7( |$)/g, 'OP_7 ').replace(/(^| )8( |$)/g, 'OP_8 ').replace(/(^| )9( |$)/g, 'OP_9 ')
+          .replace(/0x/g, '')
+          .replace(/DUP/g, 'OP_DUP')
+          .replace(/NOT/g, 'OP_NOT')
+          .replace(/HASH160/g, 'OP_HASH160')
+          .replace(/EQUALVERIFY/g, 'OP_EQUALVERIFY')
+          .replace(/EQUAL( |$)/g, 'OP_EQUAL ')
+          .replace(/CHECKSIG/g, 'OP_CHECKSIG')
+          .replace(/ CHECKMULTISIG/g, ' OP_CHECKMULTISIG')
+          .replace(/CODESEPARATOR/g, 'OP_CODESEPARATOR')
+          .replace(/CHECKSIGVERIFY/g, 'OP_CHECKSIGVERIFY')
+
+          // TODO: we don't prefix hex,
+          // must not throw
+          Script.fromASM(prevOutScriptPubKey)
 
           var actualHash = txin.hash
 
