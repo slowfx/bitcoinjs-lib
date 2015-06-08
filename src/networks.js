@@ -48,5 +48,17 @@ module.exports = {
     scriptHash: 0x16,
     wif: 0x9e,
     dustThreshold: 0 // https://github.com/dogecoin/dogecoin/blob/v1.7.1/src/core.h#L155-L160
-  }
+  },
+  monacoin: {
+    messagePrefix: '\x19Monacoin Signed Message:\n',
+    magic: 0xd9b4bef9,
+    bip32: {
+      public: 0x019da462, // ignore
+      private: 0x019d9cfe // ignore
+    },
+    pubKeyHash: 0x32,
+    scriptHash: 0x05,
+    wif: 0xb2,
+    dustThreshold: 0
+  },
 }
