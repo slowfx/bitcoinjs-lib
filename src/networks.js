@@ -60,5 +60,5 @@ module.exports = {
     scriptHash: 0x05,
     wif: 0xb2,
     dustThreshold: 0
-  },
+  }
 }
