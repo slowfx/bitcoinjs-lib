@@ -1,66 +1,55 @@
-var assert = require('assert')
-var base58check = require('bs58check')
+var baddress = require('./address')
 var bcrypto = require('./crypto')
 var ecdsa = require('./ecdsa')
-var ecurve = require('ecurve')
-var networks = require('./networks')
 var randomBytes = require('randombytes')
-var typeForce = require('typeforce')
+var typeforce = require('typeforce')
+var types = require('./types')
+var wif = require('wif')
 
-var Address = require('./address')
+var NETWORKS = require('./networks')
 var BigInteger = require('bigi')
 
-function findNetworkByWIFVersion (version) {
-  for (var networkName in networks) {
-    var network = networks[networkName]
-
-    if (network.wif === version) return network
-  }
-
-  assert(false, 'Unknown network')
-}
+var ecurve = require('ecurve')
+var secp256k1 = ecdsa.__curve
 
 function ECPair (d, Q, options) {
+  if (options) {
+    typeforce({
+      compressed: types.maybe(types.Boolean),
+      network: types.maybe(types.Network)
+    }, options)
+  }
+
   options = options || {}
 
-  var compressed = options.compressed === undefined ? true : options.compressed
-  var network = options.network === undefined ? networks.bitcoin : options.network
-
-  typeForce('Boolean', compressed)
-  assert('pubKeyHash' in network, 'Unknown pubKeyHash constants for network')
-
   if (d) {
-    assert(d.signum() > 0, 'Private key must be greater than 0')
-    assert(d.compareTo(ECPair.curve.n) < 0, 'Private key must be less than the curve order')
+    if (d.signum() <= 0) throw new Error('Private key must be greater than 0')
+    if (d.compareTo(secp256k1.n) >= 0) throw new Error('Private key must be less than the curve order')
+    if (Q) throw new TypeError('Unexpected publicKey parameter')
 
-    assert(!Q, 'Unexpected publicKey parameter')
     this.d = d
-
-  // enforce Q is a public key if no private key given
   } else {
-    typeForce('Point', Q)
+    typeforce(types.ECPoint, Q)
+
     this.__Q = Q
   }
 
-  this.compressed = compressed
-  this.network = network
+  this.compressed = options.compressed === undefined ? true : options.compressed
+  this.network = options.network || NETWORKS.bitcoin
 }
 
 Object.defineProperty(ECPair.prototype, 'Q', {
   get: function () {
     if (!this.__Q && this.d) {
-      this.__Q = ECPair.curve.G.multiply(this.d)
+      this.__Q = secp256k1.G.multiply(this.d)
     }
 
     return this.__Q
   }
 })
 
-// Public access to secp256k1 curve
-ECPair.curve = ecurve.getCurveByName('secp256k1')
-
 ECPair.fromPublicKeyBuffer = function (buffer, network) {
-  var Q = ecurve.Point.decodeFrom(ECPair.curve, buffer)
+  var Q = ecurve.Point.decodeFrom(secp256k1, buffer)
 
   return new ECPair(null, Q, {
     compressed: Q.compressed,
@@ -68,32 +57,29 @@ ECPair.fromPublicKeyBuffer = function (buffer, network) {
   })
 }
 
-ECPair.fromWIF = function (string) {
-  var payload = base58check.decode(string)
-  var version = payload.readUInt8(0)
-  var compressed
+ECPair.fromWIF = function (string, network) {
+  var decoded = wif.decode(string)
+  var version = decoded.version
 
-  if (payload.length === 34) {
-    assert.strictEqual(payload[33], 0x01, 'Invalid compression flag')
+  // [network, ...]
+  if (types.Array(network)) {
+    network = network.filter(function (network) {
+      return version === network.wif
+    }).pop()
 
-    // truncate the version/compression bytes
-    payload = payload.slice(1, -1)
-    compressed = true
+    if (!network) throw new Error('Unknown network version')
 
-  // no compression flag
+  // network
   } else {
-    assert.equal(payload.length, 33, 'Invalid WIF payload length')
+    network = network || NETWORKS.bitcoin
 
-    // Truncate the version byte
-    payload = payload.slice(1)
-    compressed = false
+    if (version !== network.wif) throw new Error('Invalid network version')
   }
 
-  var network = findNetworkByWIFVersion(version)
-  var d = BigInteger.fromBuffer(payload)
+  var d = BigInteger.fromBuffer(decoded.privateKey)
 
   return new ECPair(d, null, {
-    compressed: compressed,
+    compressed: decoded.compressed,
     network: network
   })
 }
@@ -102,36 +88,24 @@ ECPair.makeRandom = function (options) {
   options = options || {}
 
   var rng = options.rng || randomBytes
-  var buffer = rng(32)
-  typeForce('Buffer', buffer)
-  assert.equal(buffer.length, 32, 'Expected 256-bit Buffer from RNG')
 
-  var d = BigInteger.fromBuffer(buffer)
-  d = d.mod(ECPair.curve.n)
+  var d
+  do {
+    var buffer = rng(32)
+    typeforce(types.Buffer256bit, buffer)
+
+    d = BigInteger.fromBuffer(buffer)
+  } while (d.signum() <= 0 || d.compareTo(secp256k1.n) >= 0)
 
   return new ECPair(d, null, options)
 }
 
-ECPair.prototype.toWIF = function () {
-  assert(this.d, 'Missing private key')
-
-  var bufferLen = this.compressed ? 34 : 33
-  var buffer = new Buffer(bufferLen)
-
-  buffer.writeUInt8(this.network.wif, 0)
-  this.d.toBuffer(32).copy(buffer, 1)
-
-  if (this.compressed) {
-    buffer.writeUInt8(0x01, 33)
-  }
-
-  return base58check.encode(buffer)
+ECPair.prototype.getAddress = function () {
+  return baddress.toBase58Check(bcrypto.hash160(this.getPublicKeyBuffer()), this.getNetwork().pubKeyHash)
 }
 
-ECPair.prototype.getAddress = function () {
-  var pubKey = this.getPublicKeyBuffer()
-
-  return new Address(bcrypto.hash160(pubKey), this.network.pubKeyHash)
+ECPair.prototype.getNetwork = function () {
+  return this.network
 }
 
 ECPair.prototype.getPublicKeyBuffer = function () {
@@ -139,13 +113,19 @@ ECPair.prototype.getPublicKeyBuffer = function () {
 }
 
 ECPair.prototype.sign = function (hash) {
-  assert(this.d, 'Missing private key')
+  if (!this.d) throw new Error('Missing private key')
 
-  return ecdsa.sign(ECPair.curve, hash, this.d)
+  return ecdsa.sign(hash, this.d)
+}
+
+ECPair.prototype.toWIF = function () {
+  if (!this.d) throw new Error('Missing private key')
+
+  return wif.encode(this.network.wif, this.d.toBuffer(32), this.compressed)
 }
 
 ECPair.prototype.verify = function (hash, signature) {
-  return ecdsa.verify(ECPair.curve, hash, signature, this.Q)
+  return ecdsa.verify(hash, signature, this.Q)
 }
 
 module.exports = ECPair

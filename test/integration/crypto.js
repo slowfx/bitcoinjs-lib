@@ -4,40 +4,49 @@ var assert = require('assert')
 var async = require('async')
 var bigi = require('bigi')
 var bitcoin = require('../../')
-var blockchain = new (require('cb-blockr'))('bitcoin')
+var blockchain = require('./_blockchain')
 var crypto = require('crypto')
+
+var ecurve = require('ecurve')
+var secp256k1 = ecurve.getCurveByName('secp256k1')
 
 describe('bitcoinjs-lib (crypto)', function () {
   it('can generate a single-key stealth address', function () {
+    var G = secp256k1.G
+    var n = secp256k1.n
+
+    function stealthSend (Q) {
+      var noncePair = bitcoin.ECPair.makeRandom()
+      var e = noncePair.d
+      var eQ = Q.multiply(e) // shared secret
+      var c = bigi.fromBuffer(bitcoin.crypto.sha256(eQ.getEncoded()))
+      var cG = G.multiply(c)
+      var Qprime = Q.add(cG)
+
+      return {
+        shared: new bitcoin.ECPair(null, Qprime),
+        nonce: new bitcoin.ECPair(null, noncePair.Q)
+      }
+    }
+
+    function stealthReceive (d, P) {
+      var dP = P.multiply(d) // shared secret
+      var c = bigi.fromBuffer(bitcoin.crypto.sha256(dP.getEncoded()))
+      var derived = new bitcoin.ECPair(d.add(c).mod(n))
+
+      return derived
+    }
+
+    // receiver private key
     var receiver = bitcoin.ECPair.fromWIF('5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss')
 
-    // XXX: ephemeral, must be random (and secret to sender) to preserve privacy
-    var sender = bitcoin.ECPair.fromWIF('Kxr9tQED9H44gCmp6HAdmemAzU3n84H3dGkuWTKvE23JgHMW8gct')
+    var stealthS = stealthSend(receiver.Q) // public, done by sender
+    // ... sender now reveals nonce to receiver
 
-    var G = bitcoin.ECPair.curve.G
-    var d = receiver.d // secret (receiver only)
-    var Q = receiver.Q // shared
+    var stealthR = stealthReceive(receiver.d, stealthS.nonce.Q) // private, done by receiver
 
-    var e = sender.d // secret (sender only)
-    var P = sender.Q // shared
-
-    // derived shared secret
-    var eQ = Q.multiply(e) // sender
-    var dP = P.multiply(d) // receiver
-    assert.deepEqual(eQ.getEncoded(), dP.getEncoded())
-
-    var c = bigi.fromBuffer(bitcoin.crypto.sha256(eQ.getEncoded()))
-    var cG = G.multiply(c)
-
-    // derived public key
-    var QprimeS = Q.add(cG)
-    var QprimeR = G.multiply(d.add(c))
-    assert.deepEqual(QprimeR.getEncoded(), QprimeS.getEncoded())
-
-    // derived shared-secret address
-    var address = new bitcoin.ECPair(null, QprimeS).getAddress().toString()
-
-    assert.strictEqual(address, '1EwCNJNZM5q58YPPTnjR1H5BvYRNeyZi47')
+    // and check that we derived both sides correctly
+    assert.equal(stealthS.shared.getAddress(), stealthR.getAddress())
   })
 
   // TODO
@@ -48,20 +57,20 @@ describe('bitcoinjs-lib (crypto)', function () {
       assert(!master.keyPair.d, 'You already have the parent private key')
       assert(child.keyPair.d, 'Missing child private key')
 
-      var curve = bitcoin.ECPair.curve
+      var curve = secp256k1
       var QP = master.keyPair.Q
       var serQP = master.keyPair.getPublicKeyBuffer()
 
       var d1 = child.keyPair.d
       var d2
-      var indexBuffer = new Buffer(4)
+      var data = new Buffer(37)
+      serQP.copy(data, 0)
 
       // search index space until we find it
       for (var i = 0; i < bitcoin.HDNode.HIGHEST_BIT; ++i) {
-        indexBuffer.writeUInt32BE(i, 0)
+        data.writeUInt32BE(i, 33)
 
         // calculate I
-        var data = Buffer.concat([serQP, indexBuffer])
         var I = crypto.createHmac('sha512', master.chainCode).update(data).digest()
         var IL = I.slice(0, 32)
         var pIL = bigi.fromBuffer(IL)
@@ -90,7 +99,9 @@ describe('bitcoinjs-lib (crypto)', function () {
     assert.strictEqual(recovered.toBase58(), master.toBase58())
   })
 
-  it('can recover a private key from duplicate R values', function () {
+  it('can recover a private key from duplicate R values', function (done) {
+    this.timeout(10000)
+
     var inputs = [
       {
         txId: 'f4c16475f2a6e9c602e4a287f9db3040e319eb9ece74761a4b84bc820fbeef50',
@@ -102,12 +113,10 @@ describe('bitcoinjs-lib (crypto)', function () {
       }
     ]
 
-    var txIds = inputs.map(function (x) {
-      return x.txId
-    })
+    var txIds = inputs.map(function (x) { return x.txId })
 
     // first retrieve the relevant transactions
-    blockchain.transactions.get(txIds, function (err, results) {
+    blockchain.m.transactions.get(txIds, function (err, results) {
       assert.ifError(err)
 
       var transactions = {}
@@ -121,20 +130,22 @@ describe('bitcoinjs-lib (crypto)', function () {
       inputs.forEach(function (input) {
         var transaction = transactions[input.txId]
         var script = transaction.ins[input.vout].script
-        assert(bitcoin.scripts.isPubKeyHashInput(script), 'Expected pubKeyHash script')
+        var scriptChunks = bitcoin.script.decompile(script)
 
-        var prevOutTxId = bitcoin.bufferutils.reverse(transaction.ins[input.vout].hash).toString('hex')
+        assert(bitcoin.script.isPubKeyHashInput(scriptChunks), 'Expected pubKeyHash script')
+
+        var prevOutTxId = [].reverse.call(new Buffer(transaction.ins[input.vout].hash)).toString('hex')
         var prevVout = transaction.ins[input.vout].index
 
         tasks.push(function (callback) {
-          blockchain.transactions.get(prevOutTxId, function (err, result) {
+          blockchain.m.transactions.get(prevOutTxId, function (err, result) {
             if (err) return callback(err)
 
             var prevOut = bitcoin.Transaction.fromHex(result.txHex)
             var prevOutScript = prevOut.outs[prevVout].script
 
-            var scriptSignature = bitcoin.ECSignature.parseScriptSignature(script.chunks[0])
-            var publicKey = bitcoin.ECPair.fromPublicKeyBuffer(script.chunks[1])
+            var scriptSignature = bitcoin.ECSignature.parseScriptSignature(scriptChunks[0])
+            var publicKey = bitcoin.ECPair.fromPublicKeyBuffer(scriptChunks[1])
 
             var m = transaction.hashForSignature(input.vout, prevOutScript, scriptSignature.hashType)
             assert(publicKey.verify(m, scriptSignature.signature), 'Invalid m')
@@ -152,7 +163,7 @@ describe('bitcoinjs-lib (crypto)', function () {
       async.parallel(tasks, function (err) {
         if (err) throw err
 
-        var n = bitcoin.ECPair.curve.n
+        var n = secp256k1.n
 
         for (var i = 0; i < inputs.length; ++i) {
           for (var j = i + 1; j < inputs.length; ++j) {
@@ -183,6 +194,8 @@ describe('bitcoinjs-lib (crypto)', function () {
             assert.strictEqual(d1.toString(), d2.toString())
           }
         }
+
+        done()
       })
     })
   })

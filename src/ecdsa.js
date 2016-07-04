@@ -1,6 +1,6 @@
-var assert = require('assert')
 var createHmac = require('create-hmac')
-var typeForce = require('typeforce')
+var typeforce = require('typeforce')
+var types = require('./types')
 
 var BigInteger = require('bigi')
 var ECSignature = require('./ecsignature')
@@ -8,16 +8,17 @@ var ECSignature = require('./ecsignature')
 var ZERO = new Buffer([0])
 var ONE = new Buffer([1])
 
+var ecurve = require('ecurve')
+var secp256k1 = ecurve.getCurveByName('secp256k1')
+
 // https://tools.ietf.org/html/rfc6979#section-3.2
-function deterministicGenerateK (curve, hash, d, checkSig) {
-  typeForce('Buffer', hash)
-  typeForce('BigInteger', d)
-  typeForce('Function', checkSig)
+function deterministicGenerateK (hash, x, checkSig) {
+  typeforce(types.tuple(
+    types.Hash256bit,
+    types.Buffer256bit,
+    types.Function
+  ), arguments)
 
-  // sanity check
-  assert.equal(hash.length, 32, 'Hash must be 256 bit')
-
-  var x = d.toBuffer(32)
   var k = new Buffer(32)
   var v = new Buffer(32)
 
@@ -57,7 +58,7 @@ function deterministicGenerateK (curve, hash, d, checkSig) {
   var T = BigInteger.fromBuffer(v)
 
   // Step H3, repeat until T is within the interval [1, n - 1] and is suitable for ECDSA
-  while ((T.signum() <= 0) || (T.compareTo(curve.n) >= 0) || !checkSig(T)) {
+  while (T.signum() <= 0 || T.compareTo(secp256k1.n) >= 0 || !checkSig(T)) {
     k = createHmac('sha256', k)
       .update(v)
       .update(ZERO)
@@ -74,16 +75,21 @@ function deterministicGenerateK (curve, hash, d, checkSig) {
   return T
 }
 
-function sign (curve, hash, d) {
+var N_OVER_TWO = secp256k1.n.shiftRight(1)
+
+function sign (hash, d) {
+  typeforce(types.tuple(types.Hash256bit, types.BigInt), arguments)
+
+  var x = d.toBuffer(32)
   var e = BigInteger.fromBuffer(hash)
-  var n = curve.n
-  var G = curve.G
+  var n = secp256k1.n
+  var G = secp256k1.G
 
   var r, s
-  deterministicGenerateK(curve, hash, d, function (k) {
+  deterministicGenerateK(hash, x, function (k) {
     var Q = G.multiply(k)
 
-    if (curve.isInfinity(Q)) return false
+    if (secp256k1.isInfinity(Q)) return false
 
     r = Q.affineX.mod(n)
     if (r.signum() === 0) return false
@@ -94,8 +100,6 @@ function sign (curve, hash, d) {
     return true
   })
 
-  var N_OVER_TWO = n.shiftRight(1)
-
   // enforce low S values, see bip62: 'low s values in signatures'
   if (s.compareTo(N_OVER_TWO) > 0) {
     s = n.subtract(s)
@@ -104,9 +108,15 @@ function sign (curve, hash, d) {
   return new ECSignature(r, s)
 }
 
-function verify (curve, hash, signature, Q) {
-  var n = curve.n
-  var G = curve.G
+function verify (hash, signature, Q) {
+  typeforce(types.tuple(
+    types.Hash256bit,
+    types.ECSignature,
+    types.ECPoint
+  ), arguments)
+
+  var n = secp256k1.n
+  var G = secp256k1.G
 
   var r = signature.r
   var s = signature.s
@@ -132,7 +142,7 @@ function verify (curve, hash, signature, Q) {
   var R = G.multiplyTwo(u1, Q, u2)
 
   // 1.4.5 (cont.) Enforce R is not at infinity
-  if (curve.isInfinity(R)) return false
+  if (secp256k1.isInfinity(R)) return false
 
   // 1.4.6 Convert the field element R.x to an integer
   var xR = R.affineX
@@ -152,17 +162,20 @@ function verify (curve, hash, signature, Q) {
   *
   * http://www.secg.org/download/aid-780/sec1-v2.pdf
   */
-function recoverPubKey (curve, e, signature, i) {
-  assert.strictEqual(i & 3, i, 'Recovery param is more than two bits')
+function recoverPubKey (e, signature, i) {
+  typeforce(types.tuple(
+    types.BigInt,
+    types.ECSignature,
+    types.UInt2
+  ), arguments)
 
-  var n = curve.n
-  var G = curve.G
-
+  var n = secp256k1.n
+  var G = secp256k1.G
   var r = signature.r
   var s = signature.s
 
-  assert(r.signum() > 0 && r.compareTo(n) < 0, 'Invalid r value')
-  assert(s.signum() > 0 && s.compareTo(n) < 0, 'Invalid s value')
+  if (r.signum() <= 0 || r.compareTo(n) >= 0) throw new Error('Invalid r value')
+  if (s.signum() <= 0 || s.compareTo(n) >= 0) throw new Error('Invalid s value')
 
   // A set LSB signifies that the y-coordinate is odd
   var isYOdd = i & 1
@@ -173,11 +186,11 @@ function recoverPubKey (curve, e, signature, i) {
 
   // 1.1 Let x = r + jn
   var x = isSecondKey ? r.add(n) : r
-  var R = curve.pointFromX(isYOdd, x)
+  var R = secp256k1.pointFromX(isYOdd, x)
 
   // 1.4 Check that nR is at infinity
   var nR = R.multiply(n)
-  assert(curve.isInfinity(nR), 'nR is not a valid curve point')
+  if (!secp256k1.isInfinity(nR)) throw new Error('nR is not a valid curve point')
 
   // Compute r^-1
   var rInv = r.modInverse(n)
@@ -189,7 +202,7 @@ function recoverPubKey (curve, e, signature, i) {
   //               Q = r^-1 (sR + -eG)
   var Q = R.multiplyTwo(s, G, eNeg).multiply(rInv)
 
-  curve.validate(Q)
+  secp256k1.validate(Q)
 
   return Q
 }
@@ -205,9 +218,15 @@ function recoverPubKey (curve, e, signature, i) {
   * This function simply tries all four cases and returns the value
   * that resulted in a successful pubkey recovery.
   */
-function calcPubKeyRecoveryParam (curve, e, signature, Q) {
+function calcPubKeyRecoveryParam (e, signature, Q) {
+  typeforce(types.tuple(
+    types.BigInt,
+    types.ECSignature,
+    types.ECPoint
+  ), arguments)
+
   for (var i = 0; i < 4; i++) {
-    var Qprime = recoverPubKey(curve, e, signature, i)
+    var Qprime = recoverPubKey(e, signature, i)
 
     // 1.6.2 Verify Q
     if (Qprime.equals(Q)) {
@@ -223,5 +242,8 @@ module.exports = {
   deterministicGenerateK: deterministicGenerateK,
   recoverPubKey: recoverPubKey,
   sign: sign,
-  verify: verify
+  verify: verify,
+
+  // TODO: remove
+  __curve: secp256k1
 }

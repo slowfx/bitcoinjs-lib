@@ -1,9 +1,9 @@
 /* global describe, it, beforeEach */
 
 var assert = require('assert')
+var bscript = require('../src/script')
 
 var Transaction = require('../src/transaction')
-var Script = require('../src/script')
 
 var fixtures = require('./fixtures/transaction')
 
@@ -15,26 +15,24 @@ describe('Transaction', function () {
 
     raw.ins.forEach(function (txIn) {
       var txHash = new Buffer(txIn.hash, 'hex')
-      var script
+      var scriptSig
 
       if (txIn.data) {
-        var data = new Buffer(txIn.data, 'hex')
-        script = new Script(data, [])
+        scriptSig = new Buffer(txIn.data, 'hex')
       } else if (txIn.script) {
-        script = Script.fromASM(txIn.script)
+        scriptSig = bscript.fromASM(txIn.script)
       }
 
-      tx.addInput(txHash, txIn.index, txIn.sequence, script)
+      tx.addInput(txHash, txIn.index, txIn.sequence, scriptSig)
     })
 
     raw.outs.forEach(function (txOut) {
       var script
 
       if (txOut.data) {
-        var data = new Buffer(txOut.data, 'hex')
-        script = new Script(data, [])
+        script = new Buffer(txOut.data, 'hex')
       } else if (txOut.script) {
-        script = Script.fromASM(txOut.script)
+        script = bscript.fromASM(txOut.script)
       }
 
       tx.addOutput(script, txOut.value)
@@ -102,7 +100,7 @@ describe('Transaction', function () {
       var tx = new Transaction()
       tx.addInput(prevTxHash, 0)
 
-      assert.strictEqual(tx.ins[0].script, Script.EMPTY)
+      assert.strictEqual(tx.ins[0].script.length, 0)
     })
 
     fixtures.invalid.addInput.forEach(function (f) {
@@ -120,8 +118,8 @@ describe('Transaction', function () {
   describe('addOutput', function () {
     it('returns an index', function () {
       var tx = new Transaction()
-      assert.strictEqual(tx.addOutput(Script.EMPTY, 0), 0)
-      assert.strictEqual(tx.addOutput(Script.EMPTY, 0), 1)
+      assert.strictEqual(tx.addOutput(new Buffer(0), 0), 0)
+      assert.strictEqual(tx.addOutput(new Buffer(0), 0), 1)
     })
   })
 
@@ -160,6 +158,16 @@ describe('Transaction', function () {
         var tx = Transaction.fromHex(f.hex)
 
         assert.strictEqual(tx.getHash().toString('hex'), f.hash)
+      })
+    })
+  })
+
+  describe('isCoinbase', function () {
+    fixtures.valid.forEach(function (f) {
+      it('should return ' + f.coinbase + ' for ' + f.id, function () {
+        var tx = Transaction.fromHex(f.hex)
+
+        assert.strictEqual(tx.isCoinbase(), f.coinbase)
       })
     })
   })

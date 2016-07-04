@@ -1,95 +1,87 @@
 /* global describe, it */
 
 var assert = require('assert')
+var baddress = require('../src/address')
 var networks = require('../src/networks')
-
-var Address = require('../src/address')
-var Script = require('../src/script')
-
+var bscript = require('../src/script')
 var fixtures = require('./fixtures/address.json')
 
-describe('Address', function () {
-  describe('Constructor', function () {
-    it('does not mutate the input', function () {
-      fixtures.valid.forEach(function (f) {
-        var hash = new Buffer(f.hash, 'hex')
-        var addr = new Address(hash, f.version)
-
-        assert.strictEqual(addr.version, f.version)
-        assert.strictEqual(addr.hash.toString('hex'), f.hash)
-      })
-    })
-  })
-
+describe('address', function () {
   describe('fromBase58Check', function () {
     fixtures.valid.forEach(function (f) {
-      it('imports ' + f.script + ' (' + f.network + ') correctly', function () {
-        var addr = Address.fromBase58Check(f.base58check)
+      it('decodes ' + f.base58check, function () {
+        var decode = baddress.fromBase58Check(f.base58check)
 
-        assert.strictEqual(addr.version, f.version)
-        assert.strictEqual(addr.hash.toString('hex'), f.hash)
+        assert.strictEqual(decode.version, f.version)
+        assert.strictEqual(decode.hash.toString('hex'), f.hash)
       })
     })
 
     fixtures.invalid.fromBase58Check.forEach(function (f) {
-      it('throws on ' + f.description, function () {
+      it('throws on ' + f.exception, function () {
         assert.throws(function () {
-          Address.fromBase58Check(f.base58check)
-        }, new RegExp(f.exception))
+          baddress.fromBase58Check(f.address)
+        }, new RegExp(f.address + ' ' + f.exception))
       })
     })
   })
 
   describe('fromOutputScript', function () {
     fixtures.valid.forEach(function (f) {
-      it('imports ' + f.script + ' (' + f.network + ') correctly', function () {
-        var script = Script.fromASM(f.script)
-        var addr = Address.fromOutputScript(script, networks[f.network])
+      it('parses ' + f.script.slice(0, 30) + '... (' + f.network + ')', function () {
+        var script = bscript.fromASM(f.script)
+        var address = baddress.fromOutputScript(script, networks[f.network])
 
-        assert.strictEqual(addr.version, f.version)
-        assert.strictEqual(addr.hash.toString('hex'), f.hash)
+        assert.strictEqual(address, f.base58check)
+      })
+    })
+
+    fixtures.valid.forEach(function (f) {
+      it('parses (as chunks) ' + f.script.slice(0, 30) + '... (' + f.network + ')', function () {
+        var chunks = bscript.decompile(bscript.fromASM(f.script))
+        var address = baddress.fromOutputScript(chunks, networks[f.network])
+
+        assert.strictEqual(address, f.base58check)
       })
     })
 
     fixtures.invalid.fromOutputScript.forEach(function (f) {
-      it('throws when ' + f.description, function () {
-        var script = Script.fromASM(f.script)
+      it('throws when ' + f.script.slice(0, 30) + '... ' + f.exception, function () {
+        var script = bscript.fromASM(f.script)
 
         assert.throws(function () {
-          Address.fromOutputScript(script)
-        }, new RegExp(f.description))
+          baddress.fromOutputScript(script)
+        }, new RegExp(f.script + ' ' + f.exception))
       })
     })
   })
 
   describe('toBase58Check', function () {
     fixtures.valid.forEach(function (f) {
-      it('exports ' + f.script + ' (' + f.network + ') correctly', function () {
-        var addr = Address.fromBase58Check(f.base58check)
-        var result = addr.toBase58Check()
+      it('formats ' + f.hash + ' (' + f.network + ')', function () {
+        var address = baddress.toBase58Check(new Buffer(f.hash, 'hex'), f.version)
 
-        assert.strictEqual(result, f.base58check)
+        assert.strictEqual(address, f.base58check)
       })
     })
   })
 
   describe('toOutputScript', function () {
     fixtures.valid.forEach(function (f) {
-      it('imports ' + f.script + ' (' + f.network + ') correctly', function () {
-        var addr = Address.fromBase58Check(f.base58check)
-        var script = addr.toOutputScript()
+      var network = networks[f.network]
 
-        assert.strictEqual(script.toASM(), f.script)
+      it('exports ' + f.script.slice(0, 30) + '... (' + f.network + ')', function () {
+        var script = baddress.toOutputScript(f.base58check, network)
+
+        assert.strictEqual(bscript.toASM(script), f.script)
       })
     })
 
     fixtures.invalid.toOutputScript.forEach(function (f) {
-      it('throws when ' + f.description, function () {
-        var addr = new Address(new Buffer(f.hash, 'hex'), f.version)
-
+      it('throws when ' + f.exception, function () {
         assert.throws(function () {
-          addr.toOutputScript()
-        }, new RegExp(f.description))
+          baddress.toOutputScript(f.address)
+        }, new RegExp(f.address + ' ' + f.exception))
       })
     })
   })

@@ -1,11 +1,9 @@
 /* global describe, it */
 
+var async = require('async')
 var assert = require('assert')
 var bitcoin = require('../../')
-var blockchain = new (require('cb-insight'))('https://test-insight.bitpay.com')
-var faucetWithdraw = require('./utils').faucetWithdraw
-var pollUnspent = require('./utils').pollUnspent
-var pollSummary = require('./utils').pollSummary
+var blockchain = require('./_blockchain')
 
 describe('bitcoinjs-lib (multisig)', function () {
   it('can create a 2-of-3 multisig P2SH address', function () {
@@ -17,69 +15,71 @@ describe('bitcoinjs-lib (multisig)', function () {
       return new Buffer(hex, 'hex')
     })
 
-    var redeemScript = bitcoin.scripts.multisigOutput(2, pubKeys) // 2 of 3
-    var scriptPubKey = bitcoin.scripts.scriptHashOutput(redeemScript.getHash())
-    var address = bitcoin.Address.fromOutputScript(scriptPubKey).toString()
+    var redeemScript = bitcoin.script.multisigOutput(2, pubKeys) // 2 of 3
+    var scriptPubKey = bitcoin.script.scriptHashOutput(bitcoin.crypto.hash160(redeemScript))
+    var address = bitcoin.address.fromOutputScript(scriptPubKey)
 
     assert.strictEqual(address, '36NUkt6FWUi3LAWBqWRdDmdTWbt91Yvfu7')
   })
 
   it('can spend from a 2-of-4 multsig P2SH address', function (done) {
-    this.timeout(20000)
+    this.timeout(30000)
 
     var keyPairs = [
       '91avARGdfge8E4tZfYLoxeJ5sGBdNJQH4kvjJoQFacbgwmaKkrx',
       '91avARGdfge8E4tZfYLoxeJ5sGBdNJQH4kvjJoQFacbgww7vXtT',
       '91avARGdfge8E4tZfYLoxeJ5sGBdNJQH4kvjJoQFacbgx3cTMqe',
       '91avARGdfge8E4tZfYLoxeJ5sGBdNJQH4kvjJoQFacbgx9rcrL7'
-    ].map(bitcoin.ECPair.fromWIF)
+    ].map(function (wif) { return bitcoin.ECPair.fromWIF(wif, bitcoin.networks.testnet) })
     var pubKeys = keyPairs.map(function (x) { return x.getPublicKeyBuffer() })
 
-    var redeemScript = bitcoin.scripts.multisigOutput(2, pubKeys) // 2 of 4
-    var scriptPubKey = bitcoin.scripts.scriptHashOutput(redeemScript.getHash())
-    var address = bitcoin.Address.fromOutputScript(scriptPubKey, bitcoin.networks.testnet).toString()
+    var redeemScript = bitcoin.script.multisigOutput(2, pubKeys) // 2 of 4
+    var scriptPubKey = bitcoin.script.scriptHashOutput(bitcoin.crypto.hash160(redeemScript))
+    var address = bitcoin.address.fromOutputScript(scriptPubKey, bitcoin.networks.testnet)
 
-    // Attempt to send funds to the source address
-    faucetWithdraw(address, 2e4, function (err) {
+    // attempt to send funds to the source address
+    blockchain.t.faucet(address, 2e4, function (err, unspent) {
       if (err) return done(err)
 
-      // get latest unspents from the address
-      pollUnspent(blockchain, address, function (err, unspents) {
+      var fee = 1e4
+      var targetValue = unspent.value - fee
+
+      // make a random destination address
+      var targetAddress = bitcoin.ECPair.makeRandom({
+        network: bitcoin.networks.testnet
+      }).getAddress()
+
+      var txb = new bitcoin.TransactionBuilder(bitcoin.networks.testnet)
+      txb.addInput(unspent.txId, unspent.vout)
+      txb.addOutput(targetAddress, targetValue)
+
+      // sign with 1st and 3rd key
+      txb.sign(0, keyPairs[0], redeemScript)
+      txb.sign(0, keyPairs[2], redeemScript)
+
+      // broadcast our transaction
+      var tx = txb.build()
+      var txId = tx.getId()
+
+      blockchain.t.transactions.propagate(tx.toHex(), function (err) {
         if (err) return done(err)
 
-          // filter small unspents
-        unspents = unspents.filter(function (unspent) {
-          return unspent.value > 1e4
-        })
+        // allow for TX to be processed
+        async.retry(5, function (callback) {
+          setTimeout(function () {
+            // check that the above transaction included the intended address
+            blockchain.t.addresses.unspents(targetAddress, function (err, unspents) {
+              if (err) return callback(err)
 
-        // use the oldest unspent
-        var unspent = unspents.pop()
+              var unspentFound = unspents.some(function (unspent) {
+                return unspent.txId === txId && unspent.value === targetValue
+              })
 
-        // make a random destination address
-        var targetAddress = bitcoin.ECPair.makeRandom({
-          network: bitcoin.networks.testnet
-        }).getAddress().toString()
-
-        var txb = new bitcoin.TransactionBuilder()
-        txb.addInput(unspent.txId, unspent.vout)
-        txb.addOutput(targetAddress, 1e4)
-
-        // sign with 1st and 3rd key
-        txb.sign(0, keyPairs[0], redeemScript)
-        txb.sign(0, keyPairs[2], redeemScript)
-
-        // broadcast our transaction
-        blockchain.transactions.propagate(txb.build().toHex(), function (err) {
-          if (err) return done(err)
-
-          // check that the funds (1e4 Satoshis) indeed arrived at the intended address
-          pollSummary(blockchain, targetAddress, function (err, result) {
-            if (err) return done(err)
-
-            assert.strictEqual(result.balance, 1e4)
-            done()
-          })
-        })
+              if (!unspentFound) return callback(new Error('Could not find unspent after propagate'))
+              callback()
+            })
+          }, 600)
+        }, done)
       })
     })
   })

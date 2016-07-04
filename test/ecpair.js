@@ -4,7 +4,6 @@
 var assert = require('assert')
 var ecdsa = require('../src/ecdsa')
 var ecurve = require('ecurve')
-var networks = require('../src/networks')
 var proxyquire = require('proxyquire')
 var sinon = require('sinon')
 
@@ -12,6 +11,13 @@ var BigInteger = require('bigi')
 var ECPair = require('../src/ecpair')
 
 var fixtures = require('./fixtures/ecpair.json')
+var curve = ecdsa.__curve
+
+var NETWORKS = require('../src/networks')
+var NETWORKS_LIST = [] // Object.values(NETWORKS)
+for (var networkName in NETWORKS) {
+  NETWORKS_LIST.push(NETWORKS[networkName])
+}
 
 describe('ECPair', function () {
   describe('constructor', function () {
@@ -32,35 +38,10 @@ describe('ECPair', function () {
     it('supports the network option', function () {
       var keyPair = new ECPair(BigInteger.ONE, null, {
         compressed: false,
-        network: networks.testnet
+        network: NETWORKS.testnet
       })
 
-      assert.strictEqual(keyPair.network, networks.testnet)
-    })
-
-    it('throws if compressed option is not a bool', function () {
-      assert.throws(function () {
-        new ECPair(null, null, {
-          compressed: 2
-        }, /Expected Boolean, got 2/)
-      })
-    })
-
-    it('throws if public and private key given', function () {
-      var qBuffer = new Buffer('0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798', 'hex')
-      var Q = ecurve.Point.decodeFrom(ECPair.curve, qBuffer)
-
-      assert.throws(function () {
-        new ECPair(BigInteger.ONE, Q)
-      }, /Unexpected publicKey parameter/)
-    })
-
-    it('throws if network is missing pubKeyHash constants', function () {
-      assert.throws(function () {
-        new ECPair(null, null, {
-          network: {}
-        }, /Unknown pubKeyHash constants for network/)
-      })
+      assert.strictEqual(keyPair.network, NETWORKS.testnet)
     })
 
     fixtures.valid.forEach(function (f) {
@@ -75,11 +56,12 @@ describe('ECPair', function () {
     })
 
     fixtures.invalid.constructor.forEach(function (f) {
-      it('throws on ' + f.d, function () {
-        var d = new BigInteger(f.d)
+      it('throws ' + f.exception, function () {
+        var d = f.d && new BigInteger(f.d)
+        var Q = f.Q && ecurve.Point.decodeFrom(curve, new Buffer(f.Q, 'hex'))
 
         assert.throws(function () {
-          new ECPair(d)
+          new ECPair(d, Q, f.options)
         }, new RegExp(f.exception))
       })
     })
@@ -94,7 +76,7 @@ describe('ECPair', function () {
 
     it('wraps Q.getEncoded', sinon.test(function () {
       this.mock(keyPair.Q).expects('getEncoded')
-        .once().calledWith(keyPair.compressed)
+        .once().withArgs(keyPair.compressed)
 
       keyPair.getPublicKeyBuffer()
     }))
@@ -102,19 +84,32 @@ describe('ECPair', function () {
 
   describe('fromWIF', function () {
     fixtures.valid.forEach(function (f) {
-      it('imports ' + f.WIF + ' correctly', function () {
-        var keyPair = ECPair.fromWIF(f.WIF)
+      it('imports ' + f.WIF + ' (' + f.network + ')', function () {
+        var network = NETWORKS[f.network]
+        var keyPair = ECPair.fromWIF(f.WIF, network)
 
         assert.strictEqual(keyPair.d.toString(), f.d)
         assert.strictEqual(keyPair.compressed, f.compressed)
-        assert.strictEqual(keyPair.network, networks[f.network])
+        assert.strictEqual(keyPair.network, network)
+      })
+    })
+
+    fixtures.valid.forEach(function (f) {
+      it('imports ' + f.WIF + ' (via list of networks)', function () {
+        var keyPair = ECPair.fromWIF(f.WIF, NETWORKS_LIST)
+
+        assert.strictEqual(keyPair.d.toString(), f.d)
+        assert.strictEqual(keyPair.compressed, f.compressed)
+        assert.strictEqual(keyPair.network, NETWORKS[f.network])
       })
     })
 
     fixtures.invalid.fromWIF.forEach(function (f) {
-      it('throws on ' + f.string, function () {
+      it('throws on ' + f.WIF, function () {
         assert.throws(function () {
-          ECPair.fromWIF(f.string)
+          var networks = f.network ? NETWORKS[f.network] : NETWORKS_LIST
+
+          ECPair.fromWIF(f.WIF, networks)
         }, new RegExp(f.exception))
       })
     })
@@ -122,8 +117,8 @@ describe('ECPair', function () {
 
   describe('toWIF', function () {
     fixtures.valid.forEach(function (f) {
-      it('exports ' + f.WIF + ' correctly', function () {
-        var keyPair = ECPair.fromWIF(f.WIF)
+      it('exports ' + f.WIF, function () {
+        var keyPair = ECPair.fromWIF(f.WIF, NETWORKS_LIST)
         var result = keyPair.toWIF()
 
         assert.strictEqual(result, f.WIF)
@@ -143,18 +138,6 @@ describe('ECPair', function () {
         var keyPair = ProxiedECPair.makeRandom()
         assert.strictEqual(keyPair.toWIF(), exWIF)
       })
-
-      it('passes the options param', sinon.test(function () {
-        var options = {
-          compressed: true
-        }
-
-        // FIXME: waiting on https://github.com/cjohansen/Sinon.JS/issues/613
-//        this.mock(ECPair).expects('constructor')
-//          .once().calledWith(options)
-
-        ECPair.makeRandom(options)
-      }))
     })
 
     it('allows a custom RNG to be used', function () {
@@ -164,14 +147,35 @@ describe('ECPair', function () {
 
       assert.strictEqual(keyPair.toWIF(), exWIF)
     })
+
+    it('loops until d is within interval [1, n - 1]', sinon.test(function () {
+      var rng = this.mock()
+      rng.exactly(3)
+      rng.onCall(0).returns(new BigInteger('0').toBuffer(32)) // < 1
+      rng.onCall(1).returns(curve.n.toBuffer(32)) // > n-1
+      rng.onCall(2).returns(new BigInteger('42').toBuffer(32)) // valid
+
+      ECPair.makeRandom({ rng: rng })
+    }))
   })
 
   describe('getAddress', function () {
     fixtures.valid.forEach(function (f) {
       it('returns ' + f.address + ' for ' + f.WIF, function () {
-        var keyPair = ECPair.fromWIF(f.WIF)
+        var keyPair = ECPair.fromWIF(f.WIF, NETWORKS_LIST)
 
-        assert.strictEqual(keyPair.getAddress().toString(), f.address)
+        assert.strictEqual(keyPair.getAddress(), f.address)
+      })
+    })
+  })
+
+  describe('getNetwork', function () {
+    fixtures.valid.forEach(function (f) {
+      it('returns ' + f.network + ' for ' + f.WIF, function () {
+        var network = NETWORKS[f.network]
+        var keyPair = ECPair.fromWIF(f.WIF, NETWORKS_LIST)
+
+        assert.strictEqual(keyPair.getNetwork(), network)
       })
     })
   })
@@ -184,25 +188,10 @@ describe('ECPair', function () {
       hash = new Buffer(32)
     })
 
-    it('uses the secp256k1 curve by default', function () {
-      var secp256k1 = ecurve.getCurveByName('secp256k1')
-
-      for (var property in secp256k1) {
-        // FIXME: circular structures in ecurve
-        if (property === 'G') continue
-        if (property === 'infinity') continue
-
-        var actual = ECPair.curve[property]
-        var expected = secp256k1[property]
-
-        assert.deepEqual(actual, expected)
-      }
-    })
-
     describe('signing', function () {
       it('wraps ecdsa.sign', sinon.test(function () {
         this.mock(ecdsa).expects('sign')
-          .once().calledWith(ECPair.curve, hash, keyPair.d)
+          .once().withArgs(hash, keyPair.d)
 
         keyPair.sign(hash)
       }))
@@ -225,7 +214,7 @@ describe('ECPair', function () {
 
       it('wraps ecdsa.verify', sinon.test(function () {
         this.mock(ecdsa).expects('verify')
-          .once().calledWith(ECPair.curve, hash, signature, keyPair.Q)
+          .once().withArgs(hash, signature, keyPair.Q)
 
         keyPair.verify(hash, signature)
       }))
