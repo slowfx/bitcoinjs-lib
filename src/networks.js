@@ -41,13 +41,24 @@ module.exports = {
   },
   monacoin: {
     messagePrefix: '\x19Monacoin Signed Message:\n',
-    magic: 0xd9b4bef9,
     bip32: {
-      public: 0x019da462, // ignore
-      private: 0x019d9cfe // ignore
+      public: 0x043587cf,
+      private: 0x04358394
     },
-    pubKeyHash: 0x32,
-    scriptHash: 0x05,
-    wif: 0xb2
+    pubKeyHash: 50,
+    scriptHash: 5,
+    scriptHash2: 55,
+    wif: 0xb0,
+    old_wif: 0xb2
+  },
+  bitzeny: {
+    messagePrefix: '\x19Bitzeny Signed Message:\n',
+    bip32: {
+      public: 0x0488b21e,
+      private: 0x0488ade4
+    },
+    pubKeyHash: 81,
+    scriptHash: 5,
+    wif: 128
   }
 }
