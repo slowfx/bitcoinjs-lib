@@ -6,6 +6,15 @@ var Block = require('../src/block')
 var fixtures = require('./fixtures/block')
 
 describe('Block', function () {
+  describe('version', function () {
+    it('should be interpreted as an int32le', function () {
+      var blockHex = 'ffffffff0000000000000000000000000000000000000000000000000000000000000000414141414141414141414141414141414141414141414141414141414141414101000000020000000300000000'
+      var block = Block.fromHex(blockHex)
+      assert.equal(-1, block.version)
+      assert.equal(1, block.timestamp)
+    })
+  })
+
   describe('calculateTarget', function () {
     fixtures.targets.forEach(function (f) {
       it('returns ' + f.expected + ' for 0x' + f.bits, function () {
@@ -18,7 +27,7 @@ describe('Block', function () {
 
   describe('fromBuffer/fromHex', function () {
     fixtures.valid.forEach(function (f) {
-      it('imports the block: ' + f.description + ' correctly', function () {
+      it('imports ' + f.description, function () {
         var block = Block.fromHex(f.hex)
 
         assert.strictEqual(block.version, f.version)
@@ -27,6 +36,7 @@ describe('Block', function () {
         assert.strictEqual(block.timestamp, f.timestamp)
         assert.strictEqual(block.bits, f.bits)
         assert.strictEqual(block.nonce, f.nonce)
+        assert.strictEqual(!block.transactions, f.hex.length === 160)
       })
     })
 
@@ -47,13 +57,14 @@ describe('Block', function () {
         block = Block.fromHex(f.hex)
       })
 
-      it('exports the block: ' + f.description + ' correctly', function () {
+      it('exports ' + f.description, function () {
+        assert.strictEqual(block.toHex(true), f.hex.slice(0, 160))
         assert.strictEqual(block.toHex(), f.hex)
       })
     })
   })
 
-  describe('getHash', function () {
+  describe('getHash/getId', function () {
     fixtures.valid.forEach(function (f) {
       var block
 
@@ -61,21 +72,8 @@ describe('Block', function () {
         block = Block.fromHex(f.hex)
       })
 
-      it('returns ' + f.hash + ' for the block: ' + f.description, function () {
+      it('returns ' + f.id + ' for ' + f.description, function () {
         assert.strictEqual(block.getHash().toString('hex'), f.hash)
-      })
-    })
-  })
-
-  describe('getId', function () {
-    fixtures.valid.forEach(function (f) {
-      var block
-
-      beforeEach(function () {
-        block = Block.fromHex(f.hex)
-      })
-
-      it('returns ' + f.id + ' for the block: ' + f.description, function () {
         assert.strictEqual(block.getId(), f.id)
       })
     })

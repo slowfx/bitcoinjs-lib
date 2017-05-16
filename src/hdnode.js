@@ -61,9 +61,9 @@ HDNode.fromBase58 = function (string, networks) {
 
   // list of networks?
   if (Array.isArray(networks)) {
-    network = networks.filter(function (network) {
-      return version === network.bip32.private ||
-             version === network.bip32.public
+    network = networks.filter(function (x) {
+      return version === x.bip32.private ||
+             version === x.bip32.public
     }).pop()
 
     if (!network) throw new Error('Unknown network version')
@@ -99,23 +99,18 @@ HDNode.fromBase58 = function (string, networks) {
     if (buffer.readUInt8(45) !== 0x00) throw new Error('Invalid private key')
 
     var d = BigInteger.fromBuffer(buffer.slice(46, 78))
-
-    keyPair = new ECPair(d, null, {
-      network: network
-    })
+    keyPair = new ECPair(d, null, { network: network })
 
   // 33 bytes: public key data (0x02 + X or 0x03 + X)
   } else {
     var Q = ecurve.Point.decodeFrom(curve, buffer.slice(45, 78))
-    if (!Q.compressed) throw new Error('Invalid public key')
+    // Q.compressed is assumed, if somehow this assumption is broken, `new HDNode` will throw
 
     // Verify that the X coordinate in the public point corresponds to a point on the curve.
     // If not, the extended public key is invalid.
     curve.validate(Q)
 
-    keyPair = new ECPair(null, Q, {
-      network: network
-    })
+    keyPair = new ECPair(null, Q, { network: network })
   }
 
   var hd = new HDNode(keyPair, chainCode)
@@ -294,7 +289,7 @@ HDNode.prototype.isNeutered = function () {
 }
 
 HDNode.prototype.derivePath = function (path) {
-  typeforce(types.Bip32Path, path)
+  typeforce(types.BIP32Path, path)
 
   var splitPath = path.split('/')
   if (splitPath[0] === 'm') {
@@ -316,7 +311,5 @@ HDNode.prototype.derivePath = function (path) {
     }
   }, this)
 }
-
-HDNode.prototype.toString = HDNode.prototype.toBase58
 
 module.exports = HDNode

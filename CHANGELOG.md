@@ -1,3 +1,52 @@
+# 3.0.0
+From this release users can expect out-of-the-box Segregated Witness support.
+The majority of breaking changes have been in how `script` encoding/decoding occurs,  with the introduction of witness stacks.
+
+__added__
+- Added `script.types` enums (#679)
+- Added `script.*.*.{check,encode,decode[,encodeStack,decodeStack]}` functions (#681, #682)
+- Added minimal `TransactionBuilder.prototype.build` absurd fee-safety (#696)
+- Added `script.(decompile/compile)PushOnly` and `script.toStack` functions (#700)
+- Added `Transaction.prototype.toBuffer` Segregated Witness serialization support (#684, #701)
+- Added `Transaction.prototype.hasWitnesses` (#718)
+- Added `script.witnessCommitment.*` template
+- Added `TransactionBuilder.prototype.sign` now has two additional parameters, `witnessValue`, and `witnessScript`
+- Added `Transaction.hashForWitnessV0` and `Transaction.setWitness` (5c2fdb60436714f18440dc709f0be065928c1e49)
+
+__fixed__
+- Fixed `script` must compile minimally (#638)
+- Fixed `Transaction` and `Block` versions should be Int32, signed integers (#662)
+
+__removed__
+- Removed `ecdsa.calcPubKeyRecoveryParam`, `ecdsa.recoverPubKey` (#456)
+- Removed `buffer-equals`/`buffer-compare` dependencies (#650)
+- Removed `HDNode.prototype.toString` (#665)
+- Removed `dogecoin` network (#675)
+- Removed `message` export, moved to [`bitcoinjs-message`](https://github.com/bitcoinjs/bitcoinjs-message) (#456)
+
+__renamed__
+- Removed `script.*` functions in favour of `bitcoin.script.*.(input/output).(encode/decode/check)` style (#682)
+
+# 2.3.0
+__added__
+- Added `HDNode.prototype.isNeutered` (#536)
+- Added `HDNode.prototype.derivePath` (#538)
+- Added typeforce checking for `HDNode.prototype.derive*` (#539)
+- Added `Transaction.prototype.isCoinbase` (#578)
+- Added `Block.prototype.checkMerkleRoot` (#580)
+- Added `Block.calculateMerkleRoot` (#580)
+- Added `TransactionBuilder.prototype.setVersion` (#599)
+- Added `script.isWitnessPubKeyHashOutput` (#602)
+- Added `script.isWitnessScriptHashOutput` (#602)
+- Added `script.witnessPubKeyHashOutput` (#602)
+- Added `script.witnessScriptHashOutput` (#602)
+- Added `script.witnessScriptHashInput` (#602)
+
+__fixed__
+- Fixed "BIP32 is undefined" when network list given to `HDNode` but no compatible version found (#550)
+- Fixed `writePushDataInt` output to adhere to minimal data push policy (#617)
+
+
 # 2.2.0
 __added__
 - Added `Block.calculateTarget` for difficulty calculations (#509)

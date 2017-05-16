@@ -15,8 +15,8 @@ describe('bitcoinjs-lib (multisig)', function () {
       return new Buffer(hex, 'hex')
     })
 
-    var redeemScript = bitcoin.script.multisigOutput(2, pubKeys) // 2 of 3
-    var scriptPubKey = bitcoin.script.scriptHashOutput(bitcoin.crypto.hash160(redeemScript))
+    var redeemScript = bitcoin.script.multisig.output.encode(2, pubKeys) // 2 of 3
+    var scriptPubKey = bitcoin.script.scriptHash.output.encode(bitcoin.crypto.hash160(redeemScript))
     var address = bitcoin.address.fromOutputScript(scriptPubKey)
 
     assert.strictEqual(address, '36NUkt6FWUi3LAWBqWRdDmdTWbt91Yvfu7')
@@ -33,25 +33,17 @@ describe('bitcoinjs-lib (multisig)', function () {
     ].map(function (wif) { return bitcoin.ECPair.fromWIF(wif, bitcoin.networks.testnet) })
     var pubKeys = keyPairs.map(function (x) { return x.getPublicKeyBuffer() })
 
-    var redeemScript = bitcoin.script.multisigOutput(2, pubKeys) // 2 of 4
-    var scriptPubKey = bitcoin.script.scriptHashOutput(bitcoin.crypto.hash160(redeemScript))
+    var redeemScript = bitcoin.script.multisig.output.encode(2, pubKeys) // 2 of 4
+    var scriptPubKey = bitcoin.script.scriptHash.output.encode(bitcoin.crypto.hash160(redeemScript))
     var address = bitcoin.address.fromOutputScript(scriptPubKey, bitcoin.networks.testnet)
 
     // attempt to send funds to the source address
     blockchain.t.faucet(address, 2e4, function (err, unspent) {
       if (err) return done(err)
 
-      var fee = 1e4
-      var targetValue = unspent.value - fee
-
-      // make a random destination address
-      var targetAddress = bitcoin.ECPair.makeRandom({
-        network: bitcoin.networks.testnet
-      }).getAddress()
-
       var txb = new bitcoin.TransactionBuilder(bitcoin.networks.testnet)
       txb.addInput(unspent.txId, unspent.vout)
-      txb.addOutput(targetAddress, targetValue)
+      txb.addOutput(blockchain.t.RETURN, 1e4)
 
       // sign with 1st and 3rd key
       txb.sign(0, keyPairs[0], redeemScript)
@@ -64,18 +56,16 @@ describe('bitcoinjs-lib (multisig)', function () {
       blockchain.t.transactions.propagate(tx.toHex(), function (err) {
         if (err) return done(err)
 
-        // allow for TX to be processed
+        // wait for TX to be accepted
         async.retry(5, function (callback) {
           setTimeout(function () {
             // check that the above transaction included the intended address
-            blockchain.t.addresses.unspents(targetAddress, function (err, unspents) {
+            blockchain.t.addresses.unspents(blockchain.t.RETURN, function (err, unspents) {
               if (err) return callback(err)
+              if (!unspents.some(function (x) {
+                return x.txId === txId && x.value === 1e4
+              })) return callback(new Error('Could not find unspent after broadcast'))
 
-              var unspentFound = unspents.some(function (unspent) {
-                return unspent.txId === txId && unspent.value === targetValue
-              })
-
-              if (!unspentFound) return callback(new Error('Could not find unspent after propagate'))
               callback()
             })
           }, 600)

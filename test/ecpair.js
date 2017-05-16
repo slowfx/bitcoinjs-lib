@@ -148,12 +148,38 @@ describe('ECPair', function () {
       assert.strictEqual(keyPair.toWIF(), exWIF)
     })
 
-    it('loops until d is within interval [1, n - 1]', sinon.test(function () {
+    it('retains the same defaults as ECPair constructor', function () {
+      var keyPair = ECPair.makeRandom()
+
+      assert.strictEqual(keyPair.compressed, true)
+      assert.strictEqual(keyPair.network, NETWORKS.bitcoin)
+    })
+
+    it('supports the options parameter', function () {
+      var keyPair = ECPair.makeRandom({
+        compressed: false,
+        network: NETWORKS.testnet
+      })
+
+      assert.strictEqual(keyPair.compressed, false)
+      assert.strictEqual(keyPair.network, NETWORKS.testnet)
+    })
+
+    it('loops until d is within interval [1, n - 1] : 1', sinon.test(function () {
+      var rng = this.mock()
+      rng.exactly(2)
+      rng.onCall(0).returns(BigInteger.ZERO.toBuffer(32)) // invalid length
+      rng.onCall(1).returns(BigInteger.ONE.toBuffer(32)) // === 1
+
+      ECPair.makeRandom({ rng: rng })
+    }))
+
+    it('loops until d is within interval [1, n - 1] : n - 1', sinon.test(function () {
       var rng = this.mock()
       rng.exactly(3)
-      rng.onCall(0).returns(new BigInteger('0').toBuffer(32)) // < 1
+      rng.onCall(0).returns(BigInteger.ZERO.toBuffer(32)) // < 1
       rng.onCall(1).returns(curve.n.toBuffer(32)) // > n-1
-      rng.onCall(2).returns(new BigInteger('42').toBuffer(32)) // valid
+      rng.onCall(2).returns(curve.n.subtract(BigInteger.ONE).toBuffer(32)) // === n-1
 
       ECPair.makeRandom({ rng: rng })
     }))

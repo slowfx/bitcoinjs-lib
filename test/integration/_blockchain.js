@@ -1,45 +1,75 @@
-var async = require('async')
+var bitcoin = require('../../')
 var Blockchain = require('cb-http-client')
-var httpify = require('httpify')
-
 var BLOCKTRAIL_API_KEY = process.env.BLOCKTRAIL_API_KEY || 'c0bd8155c66e3fb148bb1664adc1e4dacd872548'
+var coinSelect = require('coinselect')
+var typeforce = require('typeforce')
+var types = require('../../src/types')
 
 var mainnet = new Blockchain('https://api.blocktrail.com/cb/v0.2.1/BTC', { api_key: BLOCKTRAIL_API_KEY })
 var testnet = new Blockchain('https://api.blocktrail.com/cb/v0.2.1/tBTC', { api_key: BLOCKTRAIL_API_KEY })
 
-testnet.faucet = function faucet (address, amount, done) {
-  httpify({
-    method: 'POST',
-    url: 'https://api.blocktrail.com/v1/tBTC/faucet/withdrawl?api_key=' + BLOCKTRAIL_API_KEY,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      address: address,
-      amount: amount
-    })
-  }, function (err, result) {
-    if (err) return done(err)
+var kpNetwork = bitcoin.networks.testnet
+var keyPair = bitcoin.ECPair.fromWIF('cQqjeq2rxqwnqwMewJhkNtJDixtX8ctA4bYoWHdxY4xRPVvAEjmk', kpNetwork)
+var kpAddress = keyPair.getAddress()
 
-    if (result.body.code === 401) {
-      return done(new Error('Hit faucet rate limit; ' + result.body.msg))
-    }
+function fundAddress (unspents, outputs, callback) {
+  // avoid too-long-mempool-chain
+  unspents = unspents.filter(function (x) {
+    return x.confirmations > 0
+  })
 
-    // allow for TX to be processed
-    async.retry(5, function (callback) {
-      setTimeout(function () {
-        testnet.addresses.unspents(address, function (err, result) {
-          if (err) return callback(err)
+  var result = coinSelect(unspents, outputs, 10)
+  if (!result.inputs) return callback(new Error('Faucet empty'))
 
-          var unspent = result.filter(function (unspent) {
-            return unspent.value >= amount
-          }).pop()
+  var txb = new bitcoin.TransactionBuilder(kpNetwork)
+  result.inputs.forEach(function (x) {
+    txb.addInput(x.txId, x.vout)
+  })
 
-          if (!unspent) return callback(new Error('No unspent given'))
-          callback(null, unspent)
-        })
-      }, 600)
-    }, done)
+  result.outputs.forEach(function (x) {
+    txb.addOutput(x.address || kpAddress, x.value)
+  })
+
+  result.inputs.forEach(function (_, i) {
+    txb.sign(i, keyPair)
+  })
+
+  var tx = txb.build()
+  var txId = tx.getId()
+
+  testnet.transactions.propagate(tx.toHex(), function (err) {
+    if (err) return callback(err)
+
+    // FIXME: @blocktrail can be very slow, give it time
+    setTimeout(() => {
+      callback(null, outputs.map(function (_, i) {
+        return { txId: txId, vout: i }
+      }))
+    }, 3000)
   })
 }
+
+testnet.faucetMany = function faucetMany (outputs, callback) {
+  testnet.addresses.unspents(kpAddress, function (err, unspents) {
+    if (err) return callback(err)
+
+    typeforce([{
+      txId: types.Hex,
+      vout: types.UInt32,
+      value: types.Satoshi
+    }], unspents)
+
+    fundAddress(unspents, outputs, callback)
+  })
+}
+
+testnet.faucet = function faucet (address, value, callback) {
+  testnet.faucetMany([{ address: address, value: value }], function (err, unspents) {
+    callback(err, unspents && unspents[0])
+  })
+}
+
+testnet.RETURN = kpAddress
 
 module.exports = {
   m: mainnet,

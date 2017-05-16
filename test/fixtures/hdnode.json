@@ -7,8 +7,6 @@
         "wif": "L52XzL2cMkHxqxBXRyEpnPQZGUs3uKiL3R11XbAdHigRzDozKZeW",
         "pubKey": "0339a36013301597daef41fbe593a02cc513d0b55527ec2df1050e2e8ff49c85c2",
         "chainCode": "873dff81c02f525623fd1fe5167eac3a55a049de3d314bb42ee227ffed37d508",
-        "hex": "0488b21e000000000000000000873dff81c02f525623fd1fe5167eac3a55a049de3d314bb42ee227ffed37d5080339a36013301597daef41fbe593a02cc513d0b55527ec2df1050e2e8ff49c85c2",
-        "hexPriv": "0488ade4000000000000000000873dff81c02f525623fd1fe5167eac3a55a049de3d314bb42ee227ffed37d50800e8f32e723decf4051aefac8e2c93c9c5b214313817cdb01a1494b917c8436b35",
         "base58": "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8",
         "base58Priv": "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi",
         "identifier": "3442193e1bb70916e914552172cd4e2dbc9df811",
@@ -17,7 +15,7 @@
       },
       "children": [
         {
-          "description": "m/0'",
+          "path": "m/0'",
           "m": 0,
           "hardened": true,
           "wif": "L5BmPijJjrKbiUfG4zbiFKNqkvuJ8usooJmzuD7Z8dkRoTThYnAT",
@@ -27,10 +25,12 @@
           "base58Priv": "xprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7oWgT11eZG7XnxHrnYeSvkzY7d2bhkJ7",
           "identifier": "5c1bd648ed23aa5fd50ba52b2457c11e9e80a6a7",
           "fingerprint": "5c1bd648",
-          "address": "19Q2WoS5hSS6T8GjhK8KZLMgmWaq4neXrh"
+          "address": "19Q2WoS5hSS6T8GjhK8KZLMgmWaq4neXrh",
+          "index": 2147483648,
+          "depth": 1
         },
         {
-          "description": "m/0'/1",
+          "path": "m/0'/1",
           "m": 1,
           "wif": "KyFAjQ5rgrKvhXvNMtFB5PCSKUYD1yyPEe3xr3T34TZSUHycXtMM",
           "pubKey": "03501e454bf00751f24b1b489aa925215d66af2234e3891c3b21a52bedb3cd711c",
@@ -39,10 +39,12 @@
           "base58Priv": "xprv9wTYmMFdV23N2TdNG573QoEsfRrWKQgWeibmLntzniatZvR9BmLnvSxqu53Kw1UmYPxLgboyZQaXwTCg8MSY3H2EU4pWcQDnRnrVA1xe8fs",
           "identifier": "bef5a2f9a56a94aab12459f72ad9cf8cf19c7bbe",
           "fingerprint": "bef5a2f9",
-          "address": "1JQheacLPdM5ySCkrZkV66G2ApAXe1mqLj"
+          "address": "1JQheacLPdM5ySCkrZkV66G2ApAXe1mqLj",
+          "index": 1,
+          "depth": 2
         },
         {
-          "description": "m/0'/1/2'",
+          "path": "m/0'/1/2'",
           "m": 2,
           "hardened": true,
           "wif": "L43t3od1Gh7Lj55Bzjj1xDAgJDcL7YFo2nEcNaMGiyRZS1CidBVU",
@@ -52,10 +54,12 @@
           "base58Priv": "xprv9z4pot5VBttmtdRTWfWQmoH1taj2axGVzFqSb8C9xaxKymcFzXBDptWmT7FwuEzG3ryjH4ktypQSAewRiNMjANTtpgP4mLTj34bhnZX7UiM",
           "identifier": "ee7ab90cde56a8c0e2bb086ac49748b8db9dce72",
           "fingerprint": "ee7ab90c",
-          "address": "1NjxqbA9aZWnh17q1UW3rB4EPu79wDXj7x"
+          "address": "1NjxqbA9aZWnh17q1UW3rB4EPu79wDXj7x",
+          "index": 2147483650,
+          "depth": 3
         },
         {
-          "description": "m/0'/1/2'/2",
+          "path": "m/0'/1/2'/2",
           "m": 2,
           "wif": "KwjQsVuMjbCP2Zmr3VaFaStav7NvevwjvvkqrWd5Qmh1XVnCteBR",
           "pubKey": "02e8445082a72f29b75ca48748a914df60622a609cacfce8ed0e35804560741d29",
@@ -64,10 +68,12 @@
           "base58Priv": "xprvA2JDeKCSNNZky6uBCviVfJSKyQ1mDYahRjijr5idH2WwLsEd4Hsb2Tyh8RfQMuPh7f7RtyzTtdrbdqqsunu5Mm3wDvUAKRHSC34sJ7in334",
           "identifier": "d880d7d893848509a62d8fb74e32148dac68412f",
           "fingerprint": "d880d7d8",
-          "address": "1LjmJcdPnDHhNTUgrWyhLGnRDKxQjoxAgt"
+          "address": "1LjmJcdPnDHhNTUgrWyhLGnRDKxQjoxAgt",
+          "index": 2,
+          "depth": 4
         },
         {
-          "description": "m/0'/1/2'/2/1000000000",
+          "path": "m/0'/1/2'/2/1000000000",
           "m": 1000000000,
           "wif": "Kybw8izYevo5xMh1TK7aUr7jHFCxXS1zv8p3oqFz3o2zFbhRXHYs",
           "pubKey": "022a471424da5e657499d1ff51cb43c47481a03b1e77f951fe64cec9f5a48f7011",
@@ -76,7 +82,9 @@
           "base58Priv": "xprvA41z7zogVVwxVSgdKUHDy1SKmdb533PjDz7J6N6mV6uS3ze1ai8FHa8kmHScGpWmj4WggLyQjgPie1rFSruoUihUZREPSL39UNdE3BBDu76",
           "identifier": "d69aa102255fed74378278c7812701ea641fdf32",
           "fingerprint": "d69aa102",
-          "address": "1LZiqrop2HGR4qrH1ULZPyBpU6AUP49Uam"
+          "address": "1LZiqrop2HGR4qrH1ULZPyBpU6AUP49Uam",
+          "index": 1000000000,
+          "depth": 5
         }
       ]
     },
@@ -89,15 +97,13 @@
         "chainCode": "60499f801b896d83179a4374aeb7822aaeaceaa0db1f85ee3e904c4defbd9689",
         "base58": "xpub661MyMwAqRbcFW31YEwpkMuc5THy2PSt5bDMsktWQcFF8syAmRUapSCGu8ED9W6oDMSgv6Zz8idoc4a6mr8BDzTJY47LJhkJ8UB7WEGuduB",
         "base58Priv": "xprv9s21ZrQH143K31xYSDQpPDxsXRTUcvj2iNHm5NUtrGiGG5e2DtALGdso3pGz6ssrdK4PFmM8NSpSBHNqPqm55Qn3LqFtT2emdEXVYsCzC2U",
-        "hex": "0488b21e00000000000000000060499f801b896d83179a4374aeb7822aaeaceaa0db1f85ee3e904c4defbd968903cbcaa9c98c877a26977d00825c956a238e8dddfbd322cce4f74b0b5bd6ace4a7",
-        "hexPriv": "0488ade400000000000000000060499f801b896d83179a4374aeb7822aaeaceaa0db1f85ee3e904c4defbd9689004b03d6fc340455b363f51020ad3ecca4f0850280cf436c70c727923f6db46c3e",
         "identifier": "bd16bee53961a47d6ad888e29545434a89bdfe95",
         "fingerprint": "bd16bee5",
         "address": "1JEoxevbLLG8cVqeoGKQiAwoWbNYSUyYjg"
       },
       "children": [
         {
-          "description": "m/0",
+          "path": "m/0",
           "m": 0,
           "wif": "L2ysLrR6KMSAtx7uPqmYpoTeiRzydXBattRXjXz5GDFPrdfPzKbj",
           "pubKey": "02fc9e5af0ac8d9b3cecfe2a888e2117ba3d089d8585886c9c826b6b22a98d12ea",
@@ -106,10 +112,12 @@
           "base58Priv": "xprv9vHkqa6EV4sPZHYqZznhT2NPtPCjKuDKGY38FBWLvgaDx45zo9WQRUT3dKYnjwih2yJD9mkrocEZXo1ex8G81dwSM1fwqWpWkeS3v86pgKt",
           "identifier": "5a61ff8eb7aaca3010db97ebda76121610b78096",
           "fingerprint": "5a61ff8e",
-          "address": "19EuDJdgfRkwCmRzbzVBHZWQG9QNWhftbZ"
+          "address": "19EuDJdgfRkwCmRzbzVBHZWQG9QNWhftbZ",
+          "index": 0,
+          "depth": 1
         },
         {
-          "description": "m/0/2147483647'",
+          "path": "m/0/2147483647'",
           "m": 2147483647,
           "hardened": true,
           "wif": "L1m5VpbXmMp57P3knskwhoMTLdhAAaXiHvnGLMribbfwzVRpz2Sr",
@@ -119,10 +127,12 @@
           "base58Priv": "xprv9wSp6B7kry3Vj9m1zSnLvN3xH8RdsPP1Mh7fAaR7aRLcQMKTR2vidYEeEg2mUCTAwCd6vnxVrcjfy2kRgVsFawNzmjuHc2YmYRmagcEPdU9",
           "identifier": "d8ab493736da02f11ed682f88339e720fb0379d1",
           "fingerprint": "d8ab4937",
-          "address": "1Lke9bXGhn5VPrBuXgN12uGUphrttUErmk"
+          "address": "1Lke9bXGhn5VPrBuXgN12uGUphrttUErmk",
+          "index": 4294967295,
+          "depth": 2
         },
         {
-          "description": "m/0/2147483647'/1",
+          "path": "m/0/2147483647'/1",
           "m": 1,
           "wif": "KzyzXnznxSv249b4KuNkBwowaN3akiNeEHy5FWoPCJpStZbEKXN2",
           "pubKey": "03a7d1d856deb74c508e05031f9895dab54626251b3806e16b4bd12e781a7df5b9",
@@ -131,10 +141,12 @@
           "base58Priv": "xprv9zFnWC6h2cLgpmSA46vutJzBcfJ8yaJGg8cX1e5StJh45BBciYTRXSd25UEPVuesF9yog62tGAQtHjXajPPdbRCHuWS6T8XA2ECKADdw4Ef",
           "identifier": "78412e3a2296a40de124307b6485bd19833e2e34",
           "fingerprint": "78412e3a",
-          "address": "1BxrAr2pHpeBheusmd6fHDP2tSLAUa3qsW"
+          "address": "1BxrAr2pHpeBheusmd6fHDP2tSLAUa3qsW",
+          "index": 1,
+          "depth": 3
         },
         {
-          "description": "m/0/2147483647'/1/2147483646'",
+          "path": "m/0/2147483647'/1/2147483646'",
           "m": 2147483646,
           "hardened": true,
           "wif": "L5KhaMvPYRW1ZoFmRjUtxxPypQ94m6BcDrPhqArhggdaTbbAFJEF",
@@ -144,10 +156,12 @@
           "base58Priv": "xprvA1RpRA33e1JQ7ifknakTFpgNXPmW2YvmhqLQYMmrj4xJXXWYpDPS3xz7iAxn8L39njGVyuoseXzU6rcxFLJ8HFsTjSyQbLYnMpCqE2VbFWc",
           "identifier": "31a507b815593dfc51ffc7245ae7e5aee304246e",
           "fingerprint": "31a507b8",
-          "address": "15XVotxCAV7sRx1PSCkQNsGw3W9jT9A94R"
+          "address": "15XVotxCAV7sRx1PSCkQNsGw3W9jT9A94R",
+          "index": 4294967294,
+          "depth": 4
         },
         {
-          "description": "m/0/2147483647'/1/2147483646'/2",
+          "path": "m/0/2147483647'/1/2147483646'/2",
           "m": 2,
           "wif": "L3WAYNAZPxx1fr7KCz7GN9nD5qMBnNiqEJNJMU1z9MMaannAt4aK",
           "pubKey": "024d902e1a2fc7a8755ab5b694c575fce742c48d9ff192e63df5193e4c7afe1f9c",
@@ -156,7 +170,39 @@
           "base58Priv": "xprvA2nrNbFZABcdryreWet9Ea4LvTJcGsqrMzxHx98MMrotbir7yrKCEXw7nadnHM8Dq38EGfSh6dqA9QWTyefMLEcBYJUuekgW4BYPJcr9E7j",
           "identifier": "26132fdbe7bf89cbc64cf8dafa3f9f88b8666220",
           "fingerprint": "26132fdb",
-          "address": "14UKfRV9ZPUp6ZC9PLhqbRtxdihW9em3xt"
+          "address": "14UKfRV9ZPUp6ZC9PLhqbRtxdihW9em3xt",
+          "index": 2,
+          "depth": 5
+        }
+      ]
+    },
+    {
+      "comment": "Private key has leading zeros, see PR #673",
+      "network": "bitcoin",
+      "master": {
+        "seed": "d13de7bd1e54422d1a3b3b699a27fb460de2849e7e66a005c647e8e4a54075cb",
+        "wif": "KwDiCU5bs8xQwsRgxjhkcJcVuR7NE4Mei8X9uSAVviVTE7JmMoS6",
+        "pubKey": "0298ccc720d5dea817c7077605263bae52bca083cf8888fee77ff4c1b4797ee180",
+        "chainCode": "c23ab32b36ddff49fae350a1bed8ec6b4d9fc252238dd789b7273ba4416054eb",
+        "base58": "xpub661MyMwAqRbcGUbHLLJ5n2DzFAt8mmaDxbmbdimh68m8EiXGEQPiJya4BJat5yMzy4e68VSUoLGCu5uvzf8dUoGvwuJsLE6F1cibmWsxFNn",
+        "base58Priv": "xprv9s21ZrQH143K3zWpEJm5QtHFh93eNJrNbNqzqLN5XoE9MvC7gs5TmBFaL2PpaXpDc8FBYVe5EChc73ApjSQ5fWsXS7auHy1MmG6hdpywE1q",
+        "identifier": "1a87677be6f73cc9655e8b4c5d2fd0aeeb1b23c7",
+        "fingerprint": "1a87677b",
+        "address": "KyDarNhq8WK8rSU36UY7bDv9MAwdpKFZYKPN89Geh2dUwHjTqVh5"
+      },
+      "children": [
+        {
+          "path": "m/44'/0'/0'/0/0'",
+          "wif": "L3z3MSqZtDQ1FPHKi7oWf1nc9rMEGFtZUDCoFa7n4F695g5qZiSu",
+          "pubKey": "027c3591221e28939e45f8ea297d62c3640ebb09d7058b01d09c963d984a40ad49",
+          "chainCode": "ca27553aa89617e982e621637d6478f564b32738f8bbe2e48d0a58a8e0f6da40",
+          "base58": "xpub6GcBnm7FfDg5ERWACCvtuotN6Tdoc37r3SZ1asBHvCWzPkqWn3MVKPWKzy6GsfmdMUGanR3D12dH1cp5tJauuubwc4FAJDn67SH2uUjwAT1",
+          "base58Priv": "xprvA3cqPFaMpr7n1wRh6BPtYfwdYRoKCaPzgDdQnUmgMrz1WxWNEW3EmbBr9ieh9BJAsRGKFPLvotb4p4Aq79jddUVKPVJt7exVzLHcv777JVf",
+          "identifier": "e371d69b5dae6eacee832a130ee9f55545275a09",
+          "fingerprint": "e371d69b",
+          "address": "1MjcmArHeqorgm9uJi4kPNQ6CbsrmCtASH",
+          "index": 2147483648,
+          "depth": 5
         }
       ]
     },
@@ -167,8 +213,6 @@
         "wif": "TAroS5Knm8GZcnpPycBgzjwwDLWMyQjDrcuGPPoArgrbW7Ln22qp",
         "pubKey": "0339a36013301597daef41fbe593a02cc513d0b55527ec2df1050e2e8ff49c85c2",
         "chainCode": "873dff81c02f525623fd1fe5167eac3a55a049de3d314bb42ee227ffed37d508",
-        "hex": "0488b21e000000000000000000873dff81c02f525623fd1fe5167eac3a55a049de3d314bb42ee227ffed37d5080339a36013301597daef41fbe593a02cc513d0b55527ec2df1050e2e8ff49c85c2",
-        "hexPriv": "019d9cfe000000000000000000873dff81c02f525623fd1fe5167eac3a55a049de3d314bb42ee227ffed37d50800e8f32e723decf4051aefac8e2c93c9c5b214313817cdb01a1494b917c8436b35",
         "base58": "Ltub2SSUS19CirucWFod2ZsYA2J4v4U76YiCXHdcQttnoiy5aGanFHCPDBX7utfG6f95u1cUbZJNafmvzNCzZZJTw1EmyFoL8u1gJbGM8ipu491",
         "base58Priv": "Ltpv71G8qDifUiNetP6nmxPA5STrUVmv2J9YSmXajv8VsYBUyuPhvN9xCaQrfX2wo5xxJNtEazYCFRUu5FmokYMM79pcqz8pcdo4rNXAFPgyB4k",
         "identifier": "3442193e1bb70916e914552172cd4e2dbc9df811",
@@ -177,7 +221,7 @@
       },
       "children": [
         {
-          "description": "m/0'",
+          "path": "m/0'",
           "m": 0,
           "hardened": true,
           "wif": "TB22qU2V9EJCVKJ8cdYaTfvDhnYcCzthcWgFm1k6hbvbKM1NLxoL",
@@ -187,7 +231,9 @@
           "base58Priv": "Ltpv73XYpw28ZyVe2zEVyiFnxUZxoKLGQNdZ8NxUi1WcqjNmMBgtLbh3KimGSnPHCoLv1RmvxHs4dnKmo1oXQ8dXuDu8uroxrbVxZPA1gXboYvx",
           "identifier": "5c1bd648ed23aa5fd50ba52b2457c11e9e80a6a7",
           "fingerprint": "5c1bd648",
-          "address": "LTcyn1jun6g9hvxtsT7cqMRSyix7AULC76"
+          "address": "LTcyn1jun6g9hvxtsT7cqMRSyix7AULC76",
+          "index": 2147483648,
+          "depth": 1
         }
       ]
     }
@@ -199,6 +245,26 @@
         "string": "xprvQQQQQQQQQQQQQQQQCviVfJSKyQ1mDYahRjijr5idH2WwLsEd4Hsb2Tyh8RfQMuPh7f7RtyzTtdrbdqqsunu5Mm3wDvUAKRHSC34sJ7in334"
       },
       {
+        "exception": "Invalid buffer length",
+        "network": "bitcoin",
+        "string": "HAsbc6CgKmTYEQg2CTz7m5STEPAB"
+      },
+      {
+        "exception": "Invalid parent fingerprint",
+        "network": "bitcoin",
+        "string": "xprv9tnJFvAXAXPfPnMTKfwpwnkty7MzJwELVgp4NTBquaKXy4RndyfJJCJJf7zNaVpBpzrwVRutZNLRCVLEcZHcvuCNG3zGbGBcZn57FbNnmSP"
+      },
+      {
+        "exception": "Invalid private key",
+        "network": "bitcoin",
+        "string": "xprv9s21ZrQH143K3yLysFvsu3n1dMwhNusmNHr7xArzAeCc7MQYqDBBStmqnZq6WLi668siBBNs3SjiyaexduHu9sXT9ixTsqptL67ADqcaBdm"
+      },
+      {
+        "exception": "Invalid index",
+        "network": "bitcoin",
+        "string": "xprv9s21ZrQYdgnodnKW4Drm1Qg7poU6Gf2WUDsjPxvYiK7iLBMrsjbnF1wsZZQgmXNeMSG3s7jmHk1b3JrzhG5w8mwXGxqFxfrweico7k8DtxR"
+      },
+      {
         "exception": "Unknown network version",
         "string": "1111111111111adADjFaSNPxwXqLjHLj4mBfYxuewDPbw9hEj1uaXCzMxRPXDFF3cUoezTFYom4sEmEVSQmENPPR315cFk9YUFVek73wE9"
       },
@@ -206,32 +272,30 @@
         "exception": "Invalid network version",
         "network": "bitcoin",
         "string": "Ltpv73XYpw28ZyVe2zEVyiFnxUZxoKLGQNdZ8NxUi1WcqjNmMBgtLbh3KimGSnPHCoLv1RmvxHs4dnKmo1oXQ8dXuDu8uroxrbVxZPA1gXboYvx"
-      }
-    ],
-    "fromBuffer": [
-      {
-        "exception": "Invalid buffer length",
-        "hex": "0488b21e0000000000000000007ffc03d4a1f2fb41ef93374c69e4d19e42e27c9a87ec8b799a205eecd3b43b5f02948d03e260a571e21bcf5bfd8e3b6602800df154906e06b2bc88eee4"
       },
       {
         "exception": "Invalid buffer length",
-        "hex": "0488b21e0000000000000000007ffc03d4a1f2fb41ef93374c69e4d19e42e27c9a87ec8b799a205eecd3b43b5f02948d03e260a571e21bcf5bfd8e3b6602800df154906e06b2bc88eee410aee35500000000"
+        "string": "9XpNiB4DberdMn4jZiMhNGtuZUd7xUrCEGw4MG967zsVNvUKBEC9XLrmVmFasanWGp15zXfTNw4vW4KdvUAynEwyKjdho9QdLMPA2H5uyt"
+      },
+      {
+        "exception": "Invalid buffer length",
+        "string": "7JJikZQ2NUXjSAnAF2SjFYE3KXbnnVxzRBNddFE1DjbDEHVGEJzYC7zqSgPoauBJS3cWmZwsER94oYSFrW9vZ4Ch5FtGeifdzmtS3FGYDB1vxFZsYKgMc"
       },
       {
         "exception": "Invalid parent fingerprint",
-        "hex": "0488b21e00ffffffff000000007ffc03d4a1f2fb41ef93374c69e4d19e42e27c9a87ec8b799a205eecd3b43b5f02948d03e260a571e21bcf5bfd8e3b6602800df154906e06b2bc88eee410aee355"
+        "string": "xpub67tVq9SuNQCfm2PXBqjGRAtNZ935kx2uHJaURePth4JBpMfEy6jum7Euj7FTpbs7fnjhfZcNEktCucWHcJf74dbKLKNSTZCQozdDVwvkJhs"
       },
       {
         "exception": "Invalid index",
-        "hex": "0488b21e0000000000ffffffff7ffc03d4a1f2fb41ef93374c69e4d19e42e27c9a87ec8b799a205eecd3b43b5f02948d03e260a571e21bcf5bfd8e3b6602800df154906e06b2bc88eee410aee355"
+        "string": "xpub661MyMwTWkfYZq6BEh3ywGVXFvNj5hhzmWMhFBHSqmub31B1LZ9wbJ3DEYXZ8bHXGqnHKfepTud5a2XxGdnnePzZa2m2DyzTnFGBUXtaf9M"
       },
       {
-        "exception": "Could not find network for 22222222",
-        "hex": "222222220000000000000000007ffc03d4a1f2fb41ef93374c69e4d19e42e27c9a87ec8b799a205eecd3b43b5f02948d03e260a571e21bcf5bfd8e3b6602800df154906e06b2bc88eee410aee355"
+        "exception": "Unknown network version",
+        "string": "8FH81Rao5EgGmdScoN66TJAHsQP7phEMeyMTku9NBJd7hXgaj3HTvSNjqJjoqBpxdbuushwPEM5otvxXt2p9dcw33AqNKzZEPMqGHmz7Dpayi6Vb"
       },
       {
         "exception": "Point is not on the curve",
-        "hex": "0488b21e000000000000000000873dff81c02f525623fd1fe5167eac3a55a049de3d314bb42ee227ffed37d508020045400697100007000037899988826500030092003000016366806305909050"
+        "string": "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gYymDsxxRe3WWeZQ7TadaLSdKUffezzczTCpB8j3JP96UwE2n6w1"
       }
     ],
     "deriveHardened": [
@@ -248,7 +312,11 @@
     ],
     "derivePath": [
       2,
-      [2, 3, 4],
+      [
+        2,
+        3,
+        4
+      ],
       "/",
       "m/m/123",
       "a/0/1/2",

@@ -5,102 +5,13 @@ var async = require('async')
 var bigi = require('bigi')
 var bitcoin = require('../../')
 var blockchain = require('./_blockchain')
-var crypto = require('crypto')
 
 var ecurve = require('ecurve')
 var secp256k1 = ecurve.getCurveByName('secp256k1')
 
 describe('bitcoinjs-lib (crypto)', function () {
-  it('can generate a single-key stealth address', function () {
-    var G = secp256k1.G
-    var n = secp256k1.n
-
-    function stealthSend (Q) {
-      var noncePair = bitcoin.ECPair.makeRandom()
-      var e = noncePair.d
-      var eQ = Q.multiply(e) // shared secret
-      var c = bigi.fromBuffer(bitcoin.crypto.sha256(eQ.getEncoded()))
-      var cG = G.multiply(c)
-      var Qprime = Q.add(cG)
-
-      return {
-        shared: new bitcoin.ECPair(null, Qprime),
-        nonce: new bitcoin.ECPair(null, noncePair.Q)
-      }
-    }
-
-    function stealthReceive (d, P) {
-      var dP = P.multiply(d) // shared secret
-      var c = bigi.fromBuffer(bitcoin.crypto.sha256(dP.getEncoded()))
-      var derived = new bitcoin.ECPair(d.add(c).mod(n))
-
-      return derived
-    }
-
-    // receiver private key
-    var receiver = bitcoin.ECPair.fromWIF('5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss')
-
-    var stealthS = stealthSend(receiver.Q) // public, done by sender
-    // ... sender now reveals nonce to receiver
-
-    var stealthR = stealthReceive(receiver.d, stealthS.nonce.Q) // private, done by receiver
-
-    // and check that we derived both sides correctly
-    assert.equal(stealthS.shared.getAddress(), stealthR.getAddress())
-  })
-
-  // TODO
-  it.skip('can generate a dual-key stealth address', function () {})
-
-  it("can recover a parent private key from the parent's public key and a derived non-hardened child private key", function () {
-    function recoverParent (master, child) {
-      assert(!master.keyPair.d, 'You already have the parent private key')
-      assert(child.keyPair.d, 'Missing child private key')
-
-      var curve = secp256k1
-      var QP = master.keyPair.Q
-      var serQP = master.keyPair.getPublicKeyBuffer()
-
-      var d1 = child.keyPair.d
-      var d2
-      var data = new Buffer(37)
-      serQP.copy(data, 0)
-
-      // search index space until we find it
-      for (var i = 0; i < bitcoin.HDNode.HIGHEST_BIT; ++i) {
-        data.writeUInt32BE(i, 33)
-
-        // calculate I
-        var I = crypto.createHmac('sha512', master.chainCode).update(data).digest()
-        var IL = I.slice(0, 32)
-        var pIL = bigi.fromBuffer(IL)
-
-        // See hdnode.js:273 to understand
-        d2 = d1.subtract(pIL).mod(curve.n)
-
-        var Qp = new bitcoin.ECPair(d2).Q
-        if (Qp.equals(QP)) break
-      }
-
-      var node = new bitcoin.HDNode(new bitcoin.ECPair(d2), master.chainCode, master.network)
-      node.depth = master.depth
-      node.index = master.index
-      node.masterFingerprint = master.masterFingerprint
-      return node
-    }
-
-    var seed = crypto.randomBytes(32)
-    var master = bitcoin.HDNode.fromSeedBuffer(seed)
-    var child = master.derive(6) // m/6
-
-    // now for the recovery
-    var neuteredMaster = master.neutered()
-    var recovered = recoverParent(neuteredMaster, child)
-    assert.strictEqual(recovered.toBase58(), master.toBase58())
-  })
-
   it('can recover a private key from duplicate R values', function (done) {
-    this.timeout(10000)
+    this.timeout(30000)
 
     var inputs = [
       {
@@ -132,9 +43,9 @@ describe('bitcoinjs-lib (crypto)', function () {
         var script = transaction.ins[input.vout].script
         var scriptChunks = bitcoin.script.decompile(script)
 
-        assert(bitcoin.script.isPubKeyHashInput(scriptChunks), 'Expected pubKeyHash script')
+        assert(bitcoin.script.pubKeyHash.input.check(scriptChunks), 'Expected pubKeyHash script')
 
-        var prevOutTxId = [].reverse.call(new Buffer(transaction.ins[input.vout].hash)).toString('hex')
+        var prevOutTxId = new Buffer(transaction.ins[input.vout].hash).reverse().toString('hex')
         var prevVout = transaction.ins[input.vout].index
 
         tasks.push(function (callback) {

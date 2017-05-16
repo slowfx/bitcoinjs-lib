@@ -7,10 +7,9 @@ module.exports = {
   TransactionBuilder: require('./transaction_builder'),
 
   address: require('./address'),
-  bufferutils: require('./bufferutils'),
+  bufferutils: require('./bufferutils'), // TODO: remove in 4.0.0
   crypto: require('./crypto'),
-  message: require('./message'),
   networks: require('./networks'),
-  opcodes: require('./opcodes.json'),
+  opcodes: require('bitcoin-ops'),
   script: require('./script')
 }

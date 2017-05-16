@@ -1,8 +1,8 @@
-var createHash = require('create-hash')
-var bufferutils = require('./bufferutils')
 var bcrypto = require('./crypto')
-var bufferCompare = require('buffer-compare')
-var bufferReverse = require('buffer-reverse')
+var fastMerkleRoot = require('merkle-lib/fastRoot')
+var typeforce = require('typeforce')
+var types = require('./types')
+var varuint = require('varuint-bitcoin')
 
 var Transaction = require('./transaction')
 
@@ -30,8 +30,14 @@ Block.fromBuffer = function (buffer) {
     return i
   }
 
+  function readInt32 () {
+    var i = buffer.readInt32LE(offset)
+    offset += 4
+    return i
+  }
+
   var block = new Block()
-  block.version = readUInt32()
+  block.version = readInt32()
   block.prevHash = readSlice(32)
   block.merkleRoot = readSlice(32)
   block.timestamp = readUInt32()
@@ -41,14 +47,13 @@ Block.fromBuffer = function (buffer) {
   if (buffer.length === 80) return block
 
   function readVarInt () {
-    var vi = bufferutils.readVarInt(buffer, offset)
-    offset += vi.size
-    return vi.number
+    var vi = varuint.decode(buffer, offset)
+    offset += varuint.decode.bytes
+    return vi
   }
 
   function readTransaction () {
     var tx = Transaction.fromBuffer(buffer.slice(offset), true)
-
     offset += tx.byteLength()
     return tx
   }
@@ -64,6 +69,14 @@ Block.fromBuffer = function (buffer) {
   return block
 }
 
+Block.prototype.byteLength = function (headersOnly) {
+  if (headersOnly || !this.transactions) return 80
+
+  return 80 + varuint.encodingLength(this.transactions.length) + this.transactions.reduce(function (a, x) {
+    return a + x.byteLength()
+  }, 0)
+}
+
 Block.fromHex = function (hex) {
   return Block.fromBuffer(new Buffer(hex, 'hex'))
 }
@@ -73,7 +86,7 @@ Block.prototype.getHash = function () {
 }
 
 Block.prototype.getId = function () {
-  return bufferReverse(this.getHash()).toString('hex')
+  return this.getHash().reverse().toString('hex')
 }
 
 Block.prototype.getUTCDate = function () {
@@ -83,8 +96,9 @@ Block.prototype.getUTCDate = function () {
   return date
 }
 
+// TODO: buffer, offset compatibility
 Block.prototype.toBuffer = function (headersOnly) {
-  var buffer = new Buffer(80)
+  var buffer = new Buffer(this.byteLength(headersOnly))
 
   var offset = 0
   function writeSlice (slice) {
@@ -92,12 +106,16 @@ Block.prototype.toBuffer = function (headersOnly) {
     offset += slice.length
   }
 
+  function writeInt32 (i) {
+    buffer.writeInt32LE(i, offset)
+    offset += 4
+  }
   function writeUInt32 (i) {
     buffer.writeUInt32LE(i, offset)
     offset += 4
   }
 
-  writeUInt32(this.version)
+  writeInt32(this.version)
   writeSlice(this.prevHash)
   writeSlice(this.merkleRoot)
   writeUInt32(this.timestamp)
@@ -106,12 +124,16 @@ Block.prototype.toBuffer = function (headersOnly) {
 
   if (headersOnly || !this.transactions) return buffer
 
-  var txLenBuffer = bufferutils.varIntBuffer(this.transactions.length)
-  var txBuffers = this.transactions.map(function (tx) {
-    return tx.toBuffer()
+  varuint.encode(this.transactions.length, buffer, offset)
+  offset += varuint.encode.bytes
+
+  this.transactions.forEach(function (tx) {
+    var txSize = tx.byteLength() // TODO: extract from toBuffer?
+    tx.toBuffer(buffer, offset)
+    offset += txSize
   })
 
-  return Buffer.concat([buffer, txLenBuffer].concat(txBuffers))
+  return buffer
 }
 
 Block.prototype.toHex = function (headersOnly) {
@@ -121,53 +143,35 @@ Block.prototype.toHex = function (headersOnly) {
 Block.calculateTarget = function (bits) {
   var exponent = ((bits & 0xff000000) >> 24) - 3
   var mantissa = bits & 0x007fffff
-  var i = 31 - exponent
-
   var target = new Buffer(32)
   target.fill(0)
-
-  target[i] = mantissa & 0xff
-  target[i - 1] = mantissa >> 8
-  target[i - 2] = mantissa >> 16
-  target[i - 3] = mantissa >> 24
-
+  target.writeUInt32BE(mantissa, 28 - exponent)
   return target
 }
 
 Block.calculateMerkleRoot = function (transactions) {
-  var length = transactions.length
-  if (length === 0) throw TypeError('Cannot compute merkle root for zero transactions')
+  typeforce([{ getHash: types.Function }], transactions)
+  if (transactions.length === 0) throw TypeError('Cannot compute merkle root for zero transactions')
 
-  var hashes = transactions.map(function (transaction) { return transaction.getHash() })
+  var hashes = transactions.map(function (transaction) {
+    return transaction.getHash()
+  })
 
-  while (length > 1) {
-    var j = 0
-
-    for (var i = 0; i < length; i += 2, ++j) {
-      var hasher = createHash('sha256')
-      hasher.update(hashes[i])
-      hasher.update(i + 1 !== length ? hashes[i + 1] : hashes[i])
-      hashes[j] = bcrypto.sha256(hasher.digest())
-    }
-
-    length = j
-  }
-
-  return hashes[0]
+  return fastMerkleRoot(hashes, bcrypto.hash256)
 }
 
 Block.prototype.checkMerkleRoot = function () {
   if (!this.transactions) return false
 
   var actualMerkleRoot = Block.calculateMerkleRoot(this.transactions)
-  return bufferCompare(this.merkleRoot, actualMerkleRoot) === 0
+  return this.merkleRoot.compare(actualMerkleRoot) === 0
 }
 
 Block.prototype.checkProofOfWork = function () {
-  var hash = bufferReverse(this.getHash())
+  var hash = this.getHash().reverse()
   var target = Block.calculateTarget(this.bits)
 
-  return bufferCompare(hash, target) <= 0
+  return hash.compare(target) <= 0
 }
 
 module.exports = Block
