@@ -48,8 +48,8 @@ module.exports = {
     pubKeyHash: 50,
     scriptHash: 5,
     scriptHash2: 55,
-    wif: 0xb0,
-    old_wif: 0xb2
+    wif: 176,
+    old_wif: 178
   },
   bitzeny: {
     messagePrefix: '\x19Bitzeny Signed Message:\n',
