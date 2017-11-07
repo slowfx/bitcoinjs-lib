@@ -505,6 +505,17 @@ TransactionBuilder.fromTransaction = function (transaction, network) {
   return txb
 }
 
+function reverseInplace (buffer) {
+  for (var i = 0, j = buffer.length - 1; i < j; ++i, --j) {
+    var t = buffer[j]
+
+    buffer[j] = buffer[i]
+    buffer[i] = t
+  }
+
+  return buffer
+}
+
 TransactionBuilder.prototype.addInput = function (txHash, vout, sequence, prevOutScript) {
   if (!this.__canModifyInputs()) {
     throw new Error('No, this would invalidate signatures')
@@ -515,7 +526,7 @@ TransactionBuilder.prototype.addInput = function (txHash, vout, sequence, prevOu
   // is it a hex string?
   if (typeof txHash === 'string') {
     // transaction hashs's are displayed in reverse order, un-reverse it
-    txHash = new Buffer(txHash, 'hex').reverse()
+    txHash = reverseInplace(new Buffer(txHash, 'hex'))
 
   // is it a Transaction object?
   } else if (txHash instanceof Transaction) {
